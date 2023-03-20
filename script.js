@@ -6,56 +6,73 @@ const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 
-let map, mapEvent ;
+// let map, mapEvent;
 
-if (navigator.geolocation)
-    navigator.geolocation.getCurrentPosition(
-        function (position) {
-            const { latitude } = position.coords;
-            const { longitude } = position.coords;
-            console.log(`https://www.google.pt/maps/@${latitude},${longitude}`);
+class App {
+    #map;
+    #mapEvent;
 
-            const coords = [latitude, longitude]
+    constructor() {
+        this._getPosition();
 
-            map = L.map('map').setView(coords, 13);
+        form.addEventListener('submit', this._newWorkout.bind(this))
+        inputType.addEventListener('change', function () {
+            inputElevation.closest('.form__row').classList.toggle('form__row--hidden')
+            inputCadence.closest('.form__row').classList.toggle('form__row--hidden')
+        })
+    }
 
-            L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+    _getPosition() {
+        if (navigator.geolocation)
+            navigator.geolocation.getCurrentPosition(this._loadMap.bind(this), function () {
+                alert('Could not get your position');
+            }
+            );
+    }
 
-            
+    _loadMap(position) {
+        const { latitude } = position.coords;
+        const { longitude } = position.coords;
+        console.log(`https://www.google.pt/maps/@${latitude},${longitude}`);
 
-            map.on('click', function (mapE){
-                mapEvent = mapE
-                form.classList.remove('hidden');
-                inputDistance.focus()
-                // console.log(mapEvent);
-                
-            })
-        },
-        function () {
-            alert('Could not get your position');
-        }
-    );
+        const coords = [latitude, longitude]
 
-    form.addEventListener('submit', function (e) {
+        this.#map = L.map('map').setView(coords, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(this.#map);
+        this.#map.on('click', this._showForm.bind(this) )
+
+    }
+
+    _showForm(mapE) {
+        this.#mapEvent = mapE
+        form.classList.remove('hidden');
+        inputDistance.focus()
+    }
+
+    _hideForm() {
+
+    }
+    _newWorkout(e) {
         e.preventDefault()
         inputDistance.value = inputDuration.value = inputCadence.value = inputElevation.value = '';
 
-        const {lat, lng} = mapEvent.latlng;
-                L.marker([lat, lng]).addTo(map)
-                .bindPopup(
-                    L.popup({
+        const { lat, lng } = this.#mapEvent.latlng;
+        L.marker([lat, lng]).addTo(this.#map)
+            .bindPopup(
+                L.popup({
                     maxWidth: 250,
                     minWidth: 100,
                     autoClose: false,
                     closeOnClick: false,
                     className: 'running-popup',
-                  }))
-                .setPopupContent('workout')
-                .openPopup();
-    })
-    inputType.addEventListener('change', function (){
-        inputElevation.closest('.form__row').classList.toggle('form__row--hidden')
-        inputCadence.closest('.form__row').classList.toggle('form__row--hidden')
-    })
+                }))
+            .setPopupContent('workout')
+            .openPopup();
+    }
+}
+
+const app = new App()
+
